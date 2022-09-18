@@ -1,6 +1,132 @@
 (ns test-plus.core
   (:require [clojure.test :as t]))
 
+(intern 'clojure.test (with-meta 'testing.skip {:macro true}) @#'testing.skip)
+
+(def test-stats (atom {}))
+
+(def ^:dynamic *test-parent*)
+
+(defn my-testing
+  [only? f]
+  (when (or (= (get-in @test-stats [t/*testing-contexts* :only] 0) 0)
+            only?)
+    (f)))
+
+(defn update-stat [stat context]
+  (swap! stat (fn [stat] (update-in stat [context :only] (fn [x] (if x (inc x) 1))))))
+
+(defmacro testing
+  "Adds a new string to the list of testing contexts.  May be nested,
+  but must occur inside a test function (deftest)."
+  {:added "1.1"}
+  [string & body]
+  `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
+     (my-testing false (fn [] ~@body))))
+
+(defmacro testing.only
+  "Adds a new string to the list of testing contexts.  May be nested,
+  but must occur inside a test function (deftest)."
+  {:added "1.1"}
+  [string & body]
+  (update-stat test-stats t/*testing-contexts*)
+  `(do
+     (binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
+       (my-testing true (fn [] ~@body)))))
+
+(defmacro deftest
+  "Defines a test function with no arguments.  Test functions may call
+  other tests, so tests may be composed.  If you compose tests, you
+  should also define a function named test-ns-hook; run-tests will
+  call test-ns-hook instead of testing all vars.
+
+  Note: Actually, the test body goes in the :test metadata on the var,
+  and the real function (the value of the var) calls test-var on
+  itself.
+
+  When *load-tests* is false, deftest is ignored."
+  {:added "1.1"}
+  [name & body]
+  (when t/*load-tests*
+   `(def ~(vary-meta name assoc :test `(binding [*test-parent* "SUP"]
+                                         (fn [] ~@body)))
+      (fn []
+          (test-var (var ~name))))))
+
+(deftest simple-test
+  (testing "n"
+    (testing "ngockq"
+      (println "Testing")
+      (t/is (= 2 (+ 1 "1"))))
+
+    (testing.only "ngockq2"
+                  (println "Testing")
+                  (t/is (= 2 (+ 1 1))))))
+
+@test-stats
+
+(test-vars [#'simple-test])
+
+(defn test-var
+  "If v has a function in its :test metadata, calls that function,
+  with *testing-vars* bound to (conj *testing-vars* v)."
+  {:dynamic true, :added "1.1"}
+  [v]
+  (when-let [t (:test (meta v))]
+    (binding [t/*testing-vars* (conj t/*testing-vars* v)
+              *test-stats*     (atom {:only 0 :skip 0})]
+      (t/do-report {:type :begin-test-var, :var v})
+      (t/inc-report-counter :test)
+      (try (t)
+           (catch Throwable e
+             (t/do-report {:type :error, :message "Uncaught exception, not in assertion."
+                         :expected nil, :actual e})))
+      (t/do-report {:type :end-test-var, :var v}))))
+
+(defn test-vars
+  "Groups vars by their namespace and runs test-var on them with
+  appropriate fixtures applied."
+  {:added "1.6"}
+  [vars]
+  (doseq [[ns vars] (group-by (comp :ns meta) vars)]
+    (let [once-fixture-fn (t/join-fixtures (::once-fixtures (meta ns)))
+          each-fixture-fn (t/join-fixtures (::each-fixtures (meta ns)))]
+      (once-fixture-fn
+       (fn []
+         (doseq [v vars]
+           (when (:test (meta v))
+             (each-fixture-fn (fn [] (test-var v))))))))))
+
+((:test (meta #'simple-test)))
+
+(test-vars [#'simple-test])
+
+(testing.skip "ngockq"
+              (println "AHHH"))
+
+(meta 't/testing.skip2)
+
+(t/testing.skip
+  "ngock" (println "abc"))
+
+(intern 'clojure.test 'random2 (defmacro random [x] `(println ~x)))
+
+#'t/random
+
+(t/random2 "sup")
+
+(defmacro tt
+  [string & body]
+  (println (meta string))
+  )
+
+(macroexpand-1 '(tt ^:ngoc "ngoc"))
+
+(meta #'ngoc)
+
+(def ^:sup quang "abc")
+
+(meta (with-meta [1 2 3] {:sup "sup"}))
 
 
 ;; NOTE:
