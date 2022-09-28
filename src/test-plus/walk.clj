@@ -4,7 +4,7 @@
 
 (def ^:dynamic *has-only?* false)
 
-(defn my-testing
+(defn testing*
   [only? f]
   (when (or (not *has-only?*) only?)
     (f)))
@@ -15,7 +15,7 @@
   {:added "1.1"}
   [string & body]
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
-    (my-testing false (fn [] ~@body))))
+    (testing* false (fn [] ~@body))))
 
 (defmacro testing-only
   "Adds a new string to the list of testing contexts.  May be nested,
@@ -23,7 +23,7 @@
   {:added "1.1"}
   [string & body]
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
-     (my-testing true (fn [] ~@body))))
+     (testing* true (fn [] ~@body))))
 
 (defmacro deftest
   [name & body]
