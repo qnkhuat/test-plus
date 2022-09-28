@@ -9,7 +9,7 @@
 
 (defn my-testing
   [only? f]
-  (when (or (= (get-in @test-stats [t/*testing-contexts* :only] 0) 0)
+  (when (or (= (get-in @test-stats [(butlast t/*testing-contexts*) :only] 0) 0)
             only?)
     (f)))
 
@@ -24,13 +24,13 @@
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
      (my-testing false (fn [] ~@body))))
 
-(defmacro testing.only
+(defmacro testing-only
   "Adds a new string to the list of testing contexts.  May be nested,
   but must occur inside a test function (deftest)."
   {:added "1.1"}
   [string & body]
-  (update-stat test-stats t/*testing-contexts*)
   `(do
+     (update-stat test-stats (conj t/*testing-contexts* ~string))
      (binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
        (my-testing true (fn [] ~@body)))))
 
@@ -48,10 +48,11 @@
   {:added "1.1"}
   [name & body]
   (when t/*load-tests*
+  (binding [*test-parent* name]
    `(def ~(vary-meta name assoc :test `(binding [*test-parent* "SUP"]
                                          (fn [] ~@body)))
       (fn []
-          (test-var (var ~name))))))
+          (test-var (var ~name)))))))
 
 (deftest simple-test
   (testing "n"
@@ -59,7 +60,7 @@
       (println "Testing")
       (t/is (= 2 (+ 1 "1"))))
 
-    (testing.only "ngockq2"
+    (testing-only "ngockq2"
                   (println "Testing")
                   (t/is (= 2 (+ 1 1))))))
 
