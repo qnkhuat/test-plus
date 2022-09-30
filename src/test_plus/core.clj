@@ -20,17 +20,22 @@
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
      (testing* true (fn [] ~@body))))
 
-;; PROBLEMS:
-;; - this does not work if testing are nested,, currently it only walks at the outer most layers
-;; - are we dealing with ns correctly here? the comparision of resolve = ns-resolve *ns* looks weird
+(defn testing-only? [x]
+  (and (symbol? x)
+       (= (resolve 'clojure.test/testing-only) (ns-resolve *ns* x))))
+
+(defn form-has-testing-only? [form]
+  "Returns true if the form contains at least one `testing-only`."
+  (boolean (some true?
+                 (for [sub-form form]
+                   (if (seq? sub-form)
+                     (form-has-testing-only? sub-form)
+                     (testing-only? sub-form))))))
+
 (defmacro deftest+
   [name & body]
   (when t/*load-tests*
-    (let [has-only?# (true? (walk/walk
-                              first
-                              (fn [all]
-                                (some #(= (resolve 'clojure.test/testing-only) (ns-resolve *ns* %)) all))
-                              body))]
+    (let [has-only?# (form-has-testing-only? body)]
       `(def ~(vary-meta name assoc :test `(fn []
                                             (binding [*has-only?* ~has-only?#] ~@body)))
          (fn [] (t/test-var (var ~name)))))))
@@ -48,4 +53,19 @@
     (t/testing-only "yes"
                     (println "YES"))
     (t/testing "no"
-      (println "NO"))))
+      (println "NO")))
+
+
+  (t/deftest nested
+    (t/testing "SUP"
+      (t/testing-only "yes"
+                      (println "YES"))
+      (t/testing "no"
+        (println "NO"))))
+
+  (t/deftest no-only
+    (t/testing "SUP"
+      (t/testing "no"
+        (println "no"))
+      (t/testing "no"
+        (println "NO")))))
