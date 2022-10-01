@@ -1,10 +1,9 @@
 (ns test-plus.core
-  (:require [clojure.walk :as walk]
-            [clojure.test :as t]))
+  (:require [clojure.test :as t]))
 
 (def ^:dynamic *has-only?* false)
 
-(defn testing*
+(defn- testing*
   [only? f]
   (when (or (not *has-only?*) only?)
     (f)))
@@ -20,12 +19,13 @@
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
      (testing* true (fn [] ~@body))))
 
-(defn testing-only? [x]
+(defn- testing-only? [x]
   (and (symbol? x)
        (= (resolve 'clojure.test/testing-only) (ns-resolve *ns* x))))
 
-(defn form-has-testing-only? [form]
+(defn- form-has-testing-only?
   "Returns true if the form contains at least one `testing-only`."
+  [form]
   (boolean (some true?
                  (for [sub-form form]
                    (if (seq? sub-form)
