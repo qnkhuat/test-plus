@@ -3,7 +3,7 @@
 
 (def ^:dynamic *has-only?* false)
 
-(defn- testing*
+(defn testing*
   [only? f]
   (when (or (not *has-only?*) only?)
     (f)))
@@ -13,6 +13,9 @@
   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
      (testing* false (fn [] ~@body))))
 
+;; We probably want to rely on the source testing function
+;; shouldn't message with how the binding are constructed on our function
+;; THE has-only need to work at the sub-level as well, because even tho if testing-only is inside a subform, it will not execute anything else inside it
 (defmacro testing-only
   "Run only this"
   [string & body]
