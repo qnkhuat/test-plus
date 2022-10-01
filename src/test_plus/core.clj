@@ -8,19 +8,6 @@
   (when (or (not *has-only?*) only?)
     (f)))
 
-(defmacro testing+
-  [string & body]
-  `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
-     (testing* false (fn [] ~@body))))
-
-;; We probably want to rely on the source testing function
-;; shouldn't message with how the binding are constructed on our function
-;; THE has-only need to work at the sub-level as well, because even tho if testing-only is inside a subform, it will not execute anything else inside it
-(defmacro testing-only
-  "Run only this"
-  [string & body]
-  `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
-     (testing* true (fn [] ~@body))))
 
 (defn- testing-only? [x]
   (and (symbol? x)
@@ -35,6 +22,22 @@
                      (form-has-testing-only? sub-form)
                      (testing-only? sub-form))))))
 
+(defmacro testing+
+  [string & body]
+  (let [has-nested-only?# (form-has-testing-only? body)]
+   `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
+      (testing* ~has-nested-only?# (fn [] ~@body)))))
+
+;; We probably want to rely on the source testing function
+;; shouldn't message with how the binding are constructed on our function
+;; THE has-only need to work at the sub-level as well, because even tho if testing-only is inside a subform, it will not execute anything else inside it
+(defmacro testing-only
+  "Run only this"
+  [string & body]
+  `(binding [t/*testing-contexts* (conj t/*testing-contexts* ~string)]
+     (testing* true (fn [] ~@body))))
+
+
 (defmacro deftest+
   [name & body]
   (when t/*load-tests*
@@ -47,17 +50,11 @@
   []
   (intern 'clojure.test (with-meta 'testing-only {:macro true}) @#'testing-only)
   (alter-var-root #'clojure.test/testing (constantly @#'testing+))
-  (alter-var-root #'clojure.test/deftest (constantly @#'deftest+)))
+  (alter-var-root #'clojure.test/deftest (constantly @#'deftest+))
+  nil)
 
 (comment
   (install!)
-
-  (t/deftest what
-    (t/testing-only "yes"
-                    (println "YES"))
-    (t/testing "no"
-      (println "NO")))
-
 
   (t/deftest nested
     (t/testing "SUP"
