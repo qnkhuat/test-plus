@@ -7,6 +7,7 @@
 (.setMacro #'original-testing)
 
 (defonce original-deftest (var-get #'clojure.test/deftest))
+(.setMacro #'original-deftest)
 
 (defn- testing-only? [x]
   (and (symbol? x)
@@ -28,7 +29,7 @@
 
 (defmacro testing+
   [string & body]
-  ;; if a testing from has a testing-only inside it, it should be executed
+  ;; if a testing form has a testing-only inside it, it should be executed
   (let [has-nested-only?# (form-has-testing-only? body)]
     `(original-testing ~string (wrap-testing ~has-nested-only?# (fn [] ~@body)))))
 
@@ -39,11 +40,9 @@
 
 (defmacro deftest+
   [name & body]
-  (when t/*load-tests*
-    (let [has-only?# (form-has-testing-only? body)]
-      `(def ~(vary-meta name assoc :test `(fn []
-                                            (binding [*has-only?* ~has-only?#] ~@body)))
-         (fn [] (t/test-var (var ~name)))))))
+  (let [has-only?# (form-has-testing-only? body)]
+    `(original-deftest ~name (fn [] (binding [*has-only?* ~has-only?#]
+                                      ~@body)))))
 
 (defn install!
   []
