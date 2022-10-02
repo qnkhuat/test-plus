@@ -1,4 +1,4 @@
-# test_plus
+[![Clojars Project](https://clojars.org/com.github.qnkhuat/test-plus/latest-version.svg)](https://clojars.org/com.github.qnkhuat/test-plus)
 
 Do you often have a `deftest` with long and deep `testing` inside, and you wish there is a way you can run one specific `testing` inside it?
 

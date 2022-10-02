@@ -5,7 +5,7 @@
             [org.corfield.build :as bb]))
 
 (def scm-url "git@github.com:qnkhuat/test-plus.git")
-(def lib     'io.github.qnkhuat/test-plus)
+(def lib     'com.github.qnkhuat/test-plus)
 (def version (str/trim (slurp "VERSION.txt")))
 
 (defn sha [& _]
