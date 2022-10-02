@@ -18,7 +18,7 @@ If you do, then you should use `test-plus`, it's a drop-in tooling that introduc
     (t/testing "second layer"
       (t/is (= 2 (inc 1))))
 
-    ;; you want only this test to be executen
+    ;; you want only this test to be executed
     (t/testing-only "run this only"
       (t/is (= 2 (+ 1 1))))))
 
