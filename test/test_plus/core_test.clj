@@ -10,7 +10,10 @@
   [tests id]
   (swap! tests conj id))
 
-(t/deftest tests-wihtout-testing-only-tests
+(def ^:private executed (atom false))
+
+(t/deftest a-tests-wihtout-testing-only-tests
+  (reset! executed true)
   (binding [*tests* (atom #{})]
     (t/testing "A test that doesn't have `testing-only` shoudl works"
       (t/testing "nested"
@@ -20,6 +23,11 @@
 
     ;; this is the real tests
     (t/is (= @*tests* #{:a :b}))))
+
+;; HACK: these a-, x- naming are intentional because we want this test to be run
+;; after the above teset
+(test-plus/original-deftest x-previous-test-should-be-executed
+  (t/is (= true @executed)))
 
 (t/deftest installed-tests
   (binding [*tests* (atom #{})]

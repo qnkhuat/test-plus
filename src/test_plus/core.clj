@@ -41,8 +41,8 @@
 (defmacro deftest+
   [name & body]
   (let [has-only?# (form-has-testing-only? body)]
-    `(original-deftest ~name (fn [] (binding [*has-only?* ~has-only?#]
-                                      ~@body)))))
+    `(original-deftest ~name (binding [*has-only?* ~has-only?#]
+                                      ~@body))))
 
 (defn install!
   []
