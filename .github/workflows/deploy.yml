@@ -1,4 +1,4 @@
-name: Publish
+name: deploy
 
 on:
   push:
@@ -9,9 +9,9 @@ on:
       - main
 
 jobs:
-  publish:
+  deploy:
     runs-on: ubuntu-20.04
-    environment: Publish
+    environment: Deployment
     steps:
     - uses: actions/checkout@v3
     - name: Prepare JDK 17
@@ -30,13 +30,13 @@ jobs:
           ~/.m2/repository
           ~/.gitlibs
           ~/.deps.clj
-        key: publish
+        key: deploy
     - name: Build
       run: clojure -T:build build
       env:
         GITHUB_SHA: ${{ env.GITHUB_SHA }}
-    - name: publish
-      run: clojure -T:build publish
+    - name: Deploy
+      run: clojure -T:build deploy
       env:
         CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
         CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
