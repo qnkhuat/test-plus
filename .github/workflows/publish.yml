@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-20.04
+    environment: Publish
+    steps:
+    - uses: actions/checkout@v3
+    - name: Prepare JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: 17
+        distribution: 'temurin'
+    - name: Setup Clojure
+      uses: DeLaGuardo/setup-clojure@9.5
+      with:
+        cli: 1.11.1.1155
+    - name: Restore cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.gitlibs
+          ~/.deps.clj
+        key: publish
+    - name: Build
+      run: clojure -T:build build
+      env:
+        GITHUB_SHA: ${{ env.GITHUB_SHA }}
+    - name: publish
+      run: clojure -T:build publish
+      env:
+        CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+        CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}

@@ -35,5 +35,5 @@
   (printf "Installing %s to local Maven repository...\n" version)
   (bb/install (merge default-options opts)))
 
-(defn deploy [opts]
-  (bb/deploy (merge default-options opts)))
+(defn publish [opts]
+  (bb/publish (merge default-options opts)))
