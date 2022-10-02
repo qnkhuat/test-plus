@@ -6,6 +6,8 @@
 (defonce original-testing (var-get #'clojure.test/testing))
 (.setMacro #'original-testing)
 
+(defonce original-deftest (var-get #'clojure.test/deftest))
+
 (defn- testing-only? [x]
   (and (symbol? x)
        (= (resolve 'clojure.test/testing-only) (ns-resolve *ns* x))))
@@ -32,6 +34,7 @@
 
 (defmacro testing-only
   [string & body]
+  {:style/indent 1}
   `(original-testing ~string ~@body))
 
 (defmacro deftest+
@@ -49,19 +52,8 @@
   (alter-var-root #'clojure.test/deftest (constantly @#'deftest+))
   nil)
 
-(comment
-  (install!)
-
-  (t/deftest nested
-    (t/testing "SUP"
-      (t/testing-only "yes"
-                      (println "YES"))
-      (t/testing "no"
-        (println "NO"))))
-
-  (t/deftest no-only
-    (t/testing "SUP"
-      (t/testing "no"
-        (println "no"))
-      (t/testing "no"
-        (println "NO")))))
+(defn uninstall!
+  []
+  (ns-unmap 'clojure.test 'testing-only)
+  (alter-var-root #'clojure.test/deftest (constantly @#'original-deftest))
+  (alter-var-root #'clojure.test/testing (constantly @#'original-testing)))
