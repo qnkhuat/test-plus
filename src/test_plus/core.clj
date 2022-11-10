@@ -1,7 +1,8 @@
 (ns test-plus.core
   (:require [clojure.test :as t]))
 
-(def ^:dynamic *has-only?* false)
+(def ^:dynamic *deftest-has-only?* false)
+(def ^:dynamic *inside-testing-only?* false)
 
 (defonce original-testing (var-get #'clojure.test/testing))
 (.setMacro #'original-testing)
@@ -23,8 +24,11 @@
                      (testing-only? sub-form))))))
 
 (defn wrap-testing
-  [only? f]
-  (when (or (not *has-only?*) only?)
+  [testing-has-only? f]
+  (when (or
+          (not *deftest-has-only?*) ;; if deftest doesn't have testing-only, run it
+          *inside-testing-only?*    ;; if this is a sub-testing inside a testing-only, run it
+          testing-has-only?)        ;; if deftest has testing-only, only run if this is a testing-only
     (f)))
 
 (defmacro testing+
@@ -36,12 +40,13 @@
 (defmacro testing-only
   [string & body]
   {:style/indent 1}
-  `(original-testing ~string ~@body))
+  `(original-testing ~string (binding [*inside-testing-only?* true]
+                               ~@body)))
 
 (defmacro deftest+
   [name & body]
-  (let [has-only?# (form-has-testing-only? body)]
-    `(original-deftest ~name (binding [*has-only?* ~has-only?#]
+  (let [deftest-has-only?# (form-has-testing-only? body)]
+    `(original-deftest ~name (binding [*deftest-has-only?* ~deftest-has-only?#]
                                       ~@body))))
 
 (defn install!
@@ -55,4 +60,5 @@
   []
   (ns-unmap 'clojure.test 'testing-only)
   (alter-var-root #'clojure.test/deftest (constantly @#'original-deftest))
-  (alter-var-root #'clojure.test/testing (constantly @#'original-testing)))
+  (alter-var-root #'clojure.test/testing (constantly @#'original-testing))
+  nil)

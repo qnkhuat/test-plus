@@ -4,7 +4,7 @@
 
 (test-plus/install!)
 
-(def ^:dynamic *tests* nil)
+(def ^:dynamic *ran-tests* nil)
 
 (defn- mark-test
   [tests id]
@@ -14,15 +14,15 @@
 
 (t/deftest a-tests-wihtout-testing-only-tests
   (reset! executed true)
-  (binding [*tests* (atom #{})]
+  (binding [*ran-tests* (atom #{})]
     (t/testing "A test that doesn't have `testing-only` shoudl works"
       (t/testing "nested"
-        (mark-test *tests* :a))
+        (mark-test *ran-tests* :a))
       (t/testing "nested"
-        (mark-test *tests* :b)))
+        (mark-test *ran-tests* :b)))
 
     ;; this is the real tests
-    (t/is (= @*tests* #{:a :b}))))
+    (t/is (= @*ran-tests* #{:a :b}))))
 
 ;; HACK: these a-, x- naming are intentional because we want this test to be run
 ;; after the above teset
@@ -30,25 +30,28 @@
   (t/is (= true @executed)))
 
 (t/deftest installed-tests
-  (binding [*tests* (atom #{})]
+  (binding [*ran-tests* (atom #{})]
     (t/testing "Including `testing-only` should execute only the code path that led to it"
       (t/testing "a"
-        (mark-test *tests* :a)
+        (mark-test *ran-tests* :a)
 
         (t/testing "a-a"
-          (mark-test *tests* :a-a)
+          (mark-test *ran-tests* :a-a)
 
           (t/testing "a-a-a shouldn't be executed"
-            (mark-test *tests* :a-a-a))
+            (mark-test *ran-tests* :a-a-a))
 
           (t/testing-only "a-a-b"
-            (mark-test *tests* :a-a-b))
+            (mark-test *ran-tests* :a-a-b)
 
-          (t/testing "a-a-c shouldn't be executed"
-            (mark-test *tests* :a-a-c)))
+            (t/testing "a-a-b-a sub-testing of testing-only should be executed"
+              (mark-test *ran-tests* :a-a-b-a)))
+
+         (t/testing "a-a-c shouldn't be executed"
+           (mark-test *ran-tests* :a-a-c)))
 
         (t/testing "a-b shouldn't be executed"
-          (mark-test *tests* :a-b))))
+          (mark-test *ran-tests* :a-b))))
 
     ;; this is the real tests
-    (t/is (= @*tests* #{:a :a-a :a-a-b}))))
+    (t/is (= @*ran-tests* #{:a :a-a :a-a-b :a-a-b-a}))))
