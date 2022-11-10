@@ -20,7 +20,10 @@ If you do, then you should use `test-plus`, it's a drop-in tooling that introduc
 
     ;; you want only this test to be executed
     (t/testing-only "run this only"
-      (t/is (= 2 (+ 1 1))))))
+      (t/is (= 2 (+ 1 1)))
+
+      (t/testing "And this will be executed too"
+        (t/is (= 42 (inc 41)))))))
 
 ;; run the test
 (t/test-run-var 'a-big-test)
