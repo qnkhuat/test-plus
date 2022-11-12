@@ -4,11 +4,9 @@
 (def ^:dynamic *deftest-has-only?* false)
 (def ^:dynamic *inside-testing-only?* false)
 
-(defonce original-testing (var-get #'clojure.test/testing))
-(.setMacro #'original-testing)
+(defonce ^{:macro true} original-testing (var-get #'clojure.test/testing))
 
-(defonce original-deftest (var-get #'clojure.test/deftest))
-(.setMacro #'original-deftest)
+(defonce ^{:macro true} original-deftest (var-get #'clojure.test/deftest))
 
 (defn- testing-only? [x]
   (and (symbol? x)
