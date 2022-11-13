@@ -28,3 +28,7 @@ If you do, then you should use `test-plus`, it's a drop-in tooling that introduc
 ;; run the test
 (t/test-run-var 'a-big-test)
 ```
+
+### Todo
+- [ ] supports cljs
+- [ ] Better syntax highlighting
